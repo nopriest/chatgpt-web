@@ -2,8 +2,8 @@
 
 > 使用 `express` 和 `vue3` 搭建的支持 `ChatGPT` 双模型演示网页
 
-![cover](./docs/cover.png)
-![cover2](./docs/cover2.png)
+![cover](./docs/c1.png)
+![cover2](./docs/c2.png)
 
 - [ChatGPT Web](#chatgpt-web)
 	- [介绍](#介绍)
@@ -38,9 +38,7 @@
 |  方式   | 免费？  | 可靠性  | 质量 |
 |  ----  | ----  | ----  | ----  |
 | `ChatGPTAPI(GPT-3)`  | 否 | 	可靠 | 较笨 |
-| `ChatGPTUnofficialProxyAPI(网页 accessToken)`  | 	是 |  不可靠 | 聪明 |
-
-***Note:*** 网页 `accessToken` 存在大约 8 小时，而且国内地区网络问题更推荐使用 `GPT-3` 的方式
+| `ChatGPTUnofficialProxyAPI(网页 accessToken)`  | 	是 |  相对不可靠 | 聪明 |
 
 对比：
 1. `ChatGPTAPI` 使用 `text-davinci-003` 通过官方`OpenAI`补全`API`模拟`ChatGPT`（最稳健的方法，但它不是免费的，并且没有使用针对聊天进行微调的模型）

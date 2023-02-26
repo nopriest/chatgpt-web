@@ -1,3 +1,19 @@
+## v2.7.3
+
+`2023-02-25`
+
+### Feature
+- 适配系统深色模式 [#118](https://github.com/Chanzhaoyu/chatgpt-web/issues/103)
+### BugFix
+- 修复用户消息能被渲染为 `HTML` 问题 [#117](https://github.com/Chanzhaoyu/chatgpt-web/issues/117)
+
+## v2.7.2
+
+`2023-02-24`
+### Enhancement
+- 消息使用 [github-markdown-css](https://www.npmjs.com/package/github-markdown-css) 进行美化，现在支持全语法
+- 移除测试无用函数
+
 ## v2.7.1
 
 `2023-02-23`

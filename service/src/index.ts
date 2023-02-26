@@ -26,14 +26,15 @@ router.post('/chat', async (req, res) => {
   }
 })
 
-/**  实验性质的函数，用于处理聊天过程中的中间结果 */
 router.post('/chat-process', async (req, res) => {
   res.setHeader('Content-type', 'application/octet-stream')
 
   try {
     const { prompt, options = {} } = req.body as { prompt: string; options?: ChatContext }
+    let firstChunk = true
     await chatReplyProcess(prompt, options, (chat: ChatMessage) => {
-      res.write(JSON.stringify(chat))
+      res.write(firstChunk ? JSON.stringify(chat) : `\n${JSON.stringify(chat)}`)
+      firstChunk = false
     })
   }
   catch (error) {

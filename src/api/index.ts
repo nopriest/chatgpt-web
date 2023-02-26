@@ -13,7 +13,12 @@ export function fetchChatAPI<T = any>(
   })
 }
 
-/**  实验性质的函数，用于处理聊天过程中的中间结果 */
+export function fetchChatConfig<T = any>() {
+  return post<T>({
+    url: '/config',
+  })
+}
+
 export function fetchChatAPIProcess<T = any>(
   params: {
     prompt: string
@@ -26,11 +31,5 @@ export function fetchChatAPIProcess<T = any>(
     data: { prompt: params.prompt, options: params.options },
     signal: params.signal,
     onDownloadProgress: params.onDownloadProgress,
-  })
-}
-
-export function fetchChatConfig<T = any>() {
-  return post<T>({
-    url: '/config',
   })
 }
