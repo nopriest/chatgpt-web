@@ -19,7 +19,7 @@ const ms = useMessage()
 const chatStore = useChatStore()
 
 const { isMobile } = useBasicLayout()
-const { addChat, updateChat } = useChat()
+const { addChat, updateChat, updateChatSome, getChatByUuidAndIndex } = useChat()
 const { scrollRef, scrollToBottom } = useScroll()
 
 const { uuid } = route.params as { uuid: string }
@@ -71,7 +71,7 @@ async function onConversation() {
     +uuid,
     {
       dateTime: new Date().toLocaleString(),
-      text: 'Aha, Thinking...',
+      text: '',
       loading: true,
       inversion: false,
       error: false,
@@ -118,10 +118,34 @@ async function onConversation() {
     })
   }
   catch (error: any) {
-    let errorMessage = error?.message ?? 'Something went wrong, please try again later.'
+    const errorMessage = error?.message ?? 'Something went wrong, please try again later.'
 
-    if (error.message === 'canceled')
-      errorMessage = 'Request canceled. Please try again.'
+    if (error.message === 'canceled') {
+      updateChatSome(
+        +uuid,
+        dataSources.value.length - 1,
+        {
+          loading: false,
+        },
+      )
+      scrollToBottom()
+      return
+    }
+
+    const currentChat = getChatByUuidAndIndex(+uuid, dataSources.value.length - 1)
+
+    if (currentChat?.text && currentChat.text !== '') {
+      updateChatSome(
+        +uuid,
+        dataSources.value.length - 1,
+        {
+          text: `${currentChat.text}\n[${errorMessage}]`,
+          error: false,
+          loading: false,
+        },
+      )
+      return
+    }
 
     updateChat(
       +uuid,
@@ -165,7 +189,7 @@ async function onRegenerate(index: number) {
     index,
     {
       dateTime: new Date().toLocaleString(),
-      text: 'Aha, Let me think again...',
+      text: '',
       inversion: false,
       error: false,
       loading: true,
@@ -210,10 +234,18 @@ async function onRegenerate(index: number) {
     })
   }
   catch (error: any) {
-    let errorMessage = error?.message ?? 'Something went wrong, please try again later.'
+    if (error.message === 'canceled') {
+      updateChatSome(
+        +uuid,
+        index,
+        {
+          loading: false,
+        },
+      )
+      return
+    }
 
-    if (error.message === 'canceled')
-      errorMessage = 'Request canceled. Please try again.'
+    const errorMessage = error?.message ?? 'Something went wrong, please try again later.'
 
     updateChat(
       +uuid,
@@ -266,9 +298,11 @@ function handleClear() {
 }
 
 function handleEnter(event: KeyboardEvent) {
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault()
-    handleSubmit()
+  if (!isMobile.value) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      handleSubmit()
+    }
   }
 }
 
@@ -278,6 +312,12 @@ function handleStop() {
     loading.value = false
   }
 }
+
+const placeholder = computed(() => {
+  if (isMobile.value)
+    return 'Ask me anything...'
+  return 'Ask me anything... (Shift + Enter = line break)'
+})
 
 const buttonDisabled = computed(() => {
   return loading.value || !prompt.value || prompt.value.trim() === ''
@@ -335,8 +375,8 @@ onUnmounted(() => {
               @regenerate="onRegenerate(index)"
               @delete="handleDelete(index)"
             />
-            <div class="flex justify-center">
-              <NButton v-if="loading" ghost @click="handleStop">
+            <div class="sticky bottom-0 left-0 flex justify-center">
+              <NButton v-if="loading" type="warning" @click="handleStop">
                 <template #icon>
                   <SvgIcon icon="ri:stop-circle-line" />
                 </template>
@@ -358,7 +398,7 @@ onUnmounted(() => {
           v-model:value="prompt"
           type="textarea"
           :autosize="{ minRows: 1, maxRows: 2 }"
-          placeholder="Ask me anything..."
+          :placeholder="placeholder"
           @keypress="handleEnter"
         />
         <NButton type="primary" :disabled="buttonDisabled" @click="handleSubmit">
