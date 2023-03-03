@@ -4,8 +4,8 @@ import type { ChatMessage, SendMessageOptions } from 'chatgpt'
 import { ChatGPTAPI, ChatGPTUnofficialProxyAPI } from 'chatgpt'
 import { SocksProxyAgent } from 'socks-proxy-agent'
 import fetch from 'node-fetch'
-import { sendResponse } from './utils'
-import type { ApiModel, ChatContext, ChatGPTAPIOptions, ChatGPTUnofficialProxyAPIOptions, ModelConfig } from './types'
+import { sendResponse } from '../utils'
+import type { ApiModel, ChatContext, ChatGPTAPIOptions, ChatGPTUnofficialProxyAPIOptions, ModelConfig } from '../types'
 
 dotenv.config()
 
@@ -27,8 +27,17 @@ let api: ChatGPTAPI | ChatGPTUnofficialProxyAPI
       apiKey: process.env.OPENAI_API_KEY,
       debug: false,
     }
-
-    api = new ChatGPTAPI({ ...options })
+    let fetchFn
+    if (process.env.SOCKS_PROXY_HOST && process.env.SOCKS_PROXY_PORT) {
+      const agent = new SocksProxyAgent({
+        hostname: process.env.SOCKS_PROXY_HOST,
+        port: process.env.SOCKS_PROXY_PORT,
+      })
+      fetchFn = (url, options) => {
+        return fetch(url, { agent, ...options })
+      }
+    }
+    api = new ChatGPTAPI({ ...options, fetch: fetchFn })
     apiModel = 'ChatGPTAPI'
   }
   else {
