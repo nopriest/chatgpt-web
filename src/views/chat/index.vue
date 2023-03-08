@@ -1,7 +1,8 @@
 <script setup lang='ts'>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { NButton, NInput, useDialog } from 'naive-ui'
+import { NButton, NInput, useDialog, useMessage } from 'naive-ui'
+import html2canvas from 'html2canvas'
 import { Message } from './components'
 import { useScroll } from './hooks/useScroll'
 import { useChat } from './hooks/useChat'
@@ -16,6 +17,7 @@ let controller = new AbortController()
 
 const route = useRoute()
 const dialog = useDialog()
+const ms = useMessage()
 
 const chatStore = useChatStore()
 
@@ -118,6 +120,7 @@ async function onConversation() {
         }
       },
     })
+    scrollToBottom()
   }
   catch (error: any) {
     const errorMessage = error?.message ?? t('common.wrong')
@@ -268,6 +271,46 @@ async function onRegenerate(index: number) {
   }
 }
 
+function handleExport() {
+  if (loading.value)
+    return
+
+  const d = dialog.warning({
+    title: t('chat.exportImage'),
+    content: t('chat.exportImageConfirm'),
+    positiveText: t('common.yes'),
+    negativeText: t('common.no'),
+    onPositiveClick: async () => {
+      try {
+        d.loading = true
+        const ele = document.getElementById('image-wrapper')
+        const canvas = await html2canvas(ele as HTMLDivElement)
+        const imgUrl = canvas.toDataURL('image/png')
+        const tempLink = document.createElement('a')
+        tempLink.style.display = 'none'
+        tempLink.href = imgUrl
+        tempLink.setAttribute('download', 'chat-shot.png')
+        if (typeof tempLink.download === 'undefined')
+          tempLink.setAttribute('target', '_blank')
+
+        document.body.appendChild(tempLink)
+        tempLink.click()
+        document.body.removeChild(tempLink)
+        window.URL.revokeObjectURL(imgUrl)
+        d.loading = false
+        ms.success(t('chat.exportSuccess'))
+        Promise.resolve()
+      }
+      catch (error: any) {
+        ms.error(t('chat.exportFailed'))
+      }
+      finally {
+        d.loading = false
+      }
+    },
+  })
+}
+
 function handleDelete(index: number) {
   if (loading.value)
     return
@@ -305,6 +348,12 @@ function handleEnter(event: KeyboardEvent) {
       handleSubmit()
     }
   }
+  else {
+    if (event.key === 'Enter' && event.ctrlKey) {
+      event.preventDefault()
+      handleSubmit()
+    }
+  }
 }
 
 function handleStop() {
@@ -326,15 +375,14 @@ const buttonDisabled = computed(() => {
 
 const wrapClass = computed(() => {
   if (isMobile.value)
-    return ['pt-14', 'pb-16']
-
+    return ['pt-14']
   return []
 })
 
 const footerClass = computed(() => {
   let classes = ['p-4']
   if (isMobile.value)
-    classes = ['p-2', 'pr-4', 'fixed', 'bottom-4', 'left-0', 'right-0', 'z-30', 'h-14', 'overflow-hidden']
+    classes = ['sticky', 'left-0', 'bottom-0', 'right-0', 'p-2', 'pr-4', 'overflow-hidden']
   return classes
 })
 
@@ -349,66 +397,74 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-full" :class="wrapClass">
+  <div class="flex flex-col w-full h-full" :class="wrapClass">
     <main class="flex-1 overflow-hidden">
       <div
         id="scrollRef"
         ref="scrollRef"
         class="h-full overflow-hidden overflow-y-auto"
-        :class="[isMobile ? 'p-2' : 'p-4']"
       >
-        <template v-if="!dataSources.length">
-          <div class="flex items-center justify-center mt-4 text-center text-neutral-300">
-            <SvgIcon icon="ri:bubble-chart-fill" class="mr-2 text-3xl" />
-            <span>Aha~</span>
-          </div>
-        </template>
-        <template v-else>
-          <div>
-            <Message
-              v-for="(item, index) of dataSources"
-              :key="index"
-              :date-time="item.dateTime"
-              :text="item.text"
-              :inversion="item.inversion"
-              :error="item.error"
-              :loading="item.loading"
-              @regenerate="onRegenerate(index)"
-              @delete="handleDelete(index)"
-            />
-            <div class="sticky bottom-0 left-0 flex justify-center">
-              <NButton v-if="loading" type="warning" @click="handleStop">
-                <template #icon>
-                  <SvgIcon icon="ri:stop-circle-line" />
-                </template>
-                Stop Responding
-              </NButton>
+        <div id="image-wrapper" class="w-full max-w-screen-xl m-auto" :class="[isMobile ? 'p-2' : 'p-4']">
+          <template v-if="!dataSources.length">
+            <div class="flex items-center justify-center mt-4 text-center text-neutral-300">
+              <SvgIcon icon="ri:bubble-chart-fill" class="mr-2 text-3xl" />
+              <span>Aha~</span>
             </div>
-          </div>
-        </template>
+          </template>
+          <template v-else>
+            <div>
+              <Message
+                v-for="(item, index) of dataSources"
+                :key="index"
+                :date-time="item.dateTime"
+                :text="item.text"
+                :inversion="item.inversion"
+                :error="item.error"
+                :loading="item.loading"
+                @regenerate="onRegenerate(index)"
+                @delete="handleDelete(index)"
+              />
+              <div class="sticky bottom-0 left-0 flex justify-center">
+                <NButton v-if="loading" type="warning" @click="handleStop">
+                  <template #icon>
+                    <SvgIcon icon="ri:stop-circle-line" />
+                  </template>
+                  Stop Responding
+                </NButton>
+              </div>
+            </div>
+          </template>
+        </div>
       </div>
     </main>
     <footer :class="footerClass">
-      <div class="flex items-center justify-between space-x-2">
-        <HoverButton @click="handleClear">
-          <span class="text-xl text-[#4f555e] dark:text-white">
-            <SvgIcon icon="ri:delete-bin-line" />
-          </span>
-        </HoverButton>
-        <NInput
-          v-model:value="prompt"
-          type="textarea"
-          :autosize="{ minRows: 1, maxRows: 2 }"
-          :placeholder="placeholder"
-          @keypress="handleEnter"
-        />
-        <NButton type="primary" :disabled="buttonDisabled" @click="handleSubmit">
-          <template #icon>
-            <span class="dark:text-black">
-              <SvgIcon icon="ri:send-plane-fill" />
+      <div class="w-full max-w-screen-xl m-auto">
+        <div class="flex items-center justify-between space-x-2">
+          <HoverButton @click="handleClear">
+            <span class="text-xl text-[#4f555e] dark:text-white">
+              <SvgIcon icon="ri:delete-bin-line" />
             </span>
-          </template>
-        </NButton>
+          </HoverButton>
+          <HoverButton @click="handleExport">
+            <span class="text-xl text-[#4f555e] dark:text-white">
+              <SvgIcon icon="ri:download-2-line" />
+            </span>
+          </HoverButton>
+          <NInput
+            v-model:value="prompt"
+            type="textarea"
+            :autosize="{ minRows: 1, maxRows: 2 }"
+            :placeholder="placeholder"
+            @keypress="handleEnter"
+          />
+          <NButton type="primary" :disabled="buttonDisabled" @click="handleSubmit">
+            <template #icon>
+              <span class="dark:text-black">
+                <SvgIcon icon="ri:send-plane-fill" />
+              </span>
+            </template>
+          </NButton>
+        </div>
       </div>
     </footer>
   </div>
