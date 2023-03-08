@@ -7,13 +7,13 @@ import { setupRouter } from './router'
 
 async function bootstrap() {
   const app = createApp(App)
-  setupAssets()
+  setupAssets() // 使用naive ui
 
-  setupStore(app)
+  setupStore(app) // 使用pinia
 
-  setupI18n(app)
+  setupI18n(app) // 国际化
 
-  await setupRouter(app)
+  await setupRouter(app) // 路由
 
   app.mount('#app')
 }
