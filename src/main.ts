@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import { setupI18n } from './locales'
-import { setupAssets } from './plugins'
+import { setupAssets, setupScrollbarStyle } from './plugins'
 import { setupStore } from './store'
 import { setupRouter } from './router'
 
@@ -10,6 +10,8 @@ async function bootstrap() {
   setupAssets() // 使用naive ui
 
   setupStore(app) // 使用pinia
+
+  setupScrollbarStyle()
 
   setupI18n(app) // 国际化
 
